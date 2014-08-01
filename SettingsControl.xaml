@@ -5,7 +5,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
-    <Grid>
-        <TextBlock Text="Für diese Datenbank gibt es keine Einstellmöglichkeiten"/>
-    </Grid>
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Biller.Controls;Component/Themes/Generic.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <StackPanel>
+        <TextBlock Text="Einstellungen" Style="{DynamicResource SectionHeaderStyle}"/>
+        <TextBlock Text="Für diese Datenbank können Sie keine Einstellungen vornehmen. Klicken Sie auf &quot;Weiter&quot;." Style="{DynamicResource ContentStyle}" TextWrapping="Wrap"/>
+    </StackPanel>
 </UserControl>
