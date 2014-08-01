@@ -37,6 +37,12 @@ namespace Biller.Core.Database
         {
             IsFirstLoad = false;
             AdditionalPreviewParsers = new List<Interfaces.DocumentParser>();
+            if (String.IsNullOrEmpty(DatabasePath))
+                DatabasePath = "Data//";
+
+            if (!Directory.Exists(DatabasePath))
+                Directory.CreateDirectory(DatabasePath);
+
             if (!File.Exists(DatabasePath + "Settings.xml"))
             {
                 logger.Debug(DatabasePath + "Settings.xml" + " didn't exist -> First load");

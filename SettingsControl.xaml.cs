@@ -24,5 +24,16 @@ namespace XDatabase_Biller
         {
             InitializeComponent();
         }
+
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+
+            if (DataContext is Biller.UI.ViewModel.MainWindowViewModel)
+            {
+                var settings = new Biller.Core.Database.AppSettings();
+                settings.Database = "538BAA9C-D630-486D-BD61-02706C09E2A9";
+                settings.Save();
+            }
+        }
     }
 }
