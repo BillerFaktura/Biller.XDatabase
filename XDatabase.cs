@@ -361,7 +361,8 @@ namespace Biller.Core.Database
             if (!SettingsDB.Elements("Settings").Any())
                 return new Utils.KeyValueStore();
             XElement item = SettingsDB.Element("Settings");
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<Utils.KeyValueStore>(item.Value);
+            dynamic response = Newtonsoft.Json.JsonConvert.DeserializeObject<Utils.KeyValueStore>(item.Value);
+            return response;
         }
 
         #region Articles
