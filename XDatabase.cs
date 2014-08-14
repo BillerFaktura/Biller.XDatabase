@@ -41,7 +41,18 @@ namespace Biller.Core.Database
                 DatabasePath = "Data//";
 
             if (!Directory.Exists(DatabasePath))
-                Directory.CreateDirectory(DatabasePath);
+            { 
+                try
+                {
+                    Directory.CreateDirectory(DatabasePath);
+                }
+                catch (Exception e)
+                {
+                    logger.Fatal("Could not create data directory", e);
+                    return false;
+                }
+            }
+                
 
             if (!File.Exists(DatabasePath + "Settings.xml"))
             {
