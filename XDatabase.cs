@@ -137,7 +137,13 @@ namespace Biller.Core.Database
             }
 
             OtherDBs = new List<XElement>();
-            RegisteredAdditionalDBs = new List<Interfaces.IXMLStorageable>();
+            if (RegisteredAdditionalDBs == null)
+                RegisteredAdditionalDBs = new List<Interfaces.IXMLStorageable>();
+            else
+            {
+                foreach (var item in RegisteredAdditionalDBs)
+                    registerStorageableItem(item, false);
+            }
             logger.Info("XDatabase connected");
             return true;
         }
@@ -1087,12 +1093,12 @@ namespace Biller.Core.Database
             return await Task<bool>.Run(() => registerStorageableItem(StorageableItem));
         }
 
-        private bool registerStorageableItem(Interfaces.IXMLStorageable StorageableItem)
+        private bool registerStorageableItem(Interfaces.IXMLStorageable StorageableItem, bool insertInDatabase = true)
         {
             if (String.IsNullOrEmpty(StorageableItem.XElementName))
                 return false;
-
-            RegisteredAdditionalDBs.Add(StorageableItem);
+            if (insertInDatabase)
+                RegisteredAdditionalDBs.Add(StorageableItem);
             if (File.Exists(DatabasePath + CurrentCompany.CompanyID + "\\" + StorageableItem.XElementName + "s.xml"))
             {
                 using (StreamReader reader = File.OpenText(DatabasePath + CurrentCompany.CompanyID + "\\" + StorageableItem.XElementName + "s.xml"))
