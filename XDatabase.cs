@@ -37,6 +37,23 @@ namespace Biller.Core.Database
         {
             IsFirstLoad = false;
             AdditionalPreviewParsers = new List<Interfaces.DocumentParser>();
+            if (String.IsNullOrEmpty(DatabasePath))
+                DatabasePath = "Data//";
+
+            if (!Directory.Exists(DatabasePath))
+            { 
+                try
+                {
+                    Directory.CreateDirectory(DatabasePath);
+                }
+                catch (Exception e)
+                {
+                    logger.Fatal("Could not create data directory", e);
+                    return false;
+                }
+            }
+                
+
             if (!File.Exists(DatabasePath + "Settings.xml"))
             {
                 logger.Debug(DatabasePath + "Settings.xml" + " didn't exist -> First load");
@@ -51,7 +68,7 @@ namespace Biller.Core.Database
             }
             catch (Exception e)
             {
-                logger.FatalException("Parsing LastCompany failed!", e);
+                logger.Fatal("Parsing LastCompany failed!", e);
                 return false;
             }
 
@@ -67,7 +84,7 @@ namespace Biller.Core.Database
             }
             catch (Exception e)
             {
-                logger.FatalException("Initializing DocumentDB failed!", e);
+                logger.Fatal("Initializing DocumentDB failed!", e);
                 return false;
             }
 
@@ -83,7 +100,7 @@ namespace Biller.Core.Database
             }
             catch (Exception e)
             {
-                logger.FatalException("Initializing ArticleDB failed!", e);
+                logger.Fatal("Initializing ArticleDB failed!", e);
                 return false;
             }
 
@@ -99,7 +116,7 @@ namespace Biller.Core.Database
             }
             catch (Exception e)
             {
-                logger.FatalException("Initializing CustomerDB failed!", e);
+                logger.Fatal("Initializing CustomerDB failed!", e);
                 return false;
             }
 
@@ -115,12 +132,18 @@ namespace Biller.Core.Database
             }
             catch (Exception e)
             {
-                logger.FatalException("Initializing SettingsDB failed!", e);
+                logger.Fatal("Initializing SettingsDB failed!", e);
                 return false;
             }
 
             OtherDBs = new List<XElement>();
-            RegisteredAdditionalDBs = new List<Interfaces.IXMLStorageable>();
+            if (RegisteredAdditionalDBs == null)
+                RegisteredAdditionalDBs = new List<Interfaces.IXMLStorageable>();
+            else
+            {
+                foreach (var item in RegisteredAdditionalDBs)
+                    registerStorageableItem(item, false);
+            }
             logger.Info("XDatabase connected");
             return true;
         }
@@ -160,13 +183,13 @@ namespace Biller.Core.Database
                 }
                 catch (Exception e)
                 {
-                    logger.TraceException("Error parsing " + dir + "\\Others.xml", e);
+                    logger.Trace("Error parsing " + dir + "\\Others.xml", e);
                     continue;
                 }
                 var item = new Models.CompanyInformation();
                 item.ParseFromXElement(CompanySettings.Element(item.XElementName));
                 try { temp.Add(item); }
-                catch (Exception e) { logger.TraceException("Error creating CompanyInformation", e); }
+                catch (Exception e) { logger.Trace("Error creating CompanyInformation", e); }
             }
             logger.Trace("Finished creating company list with " + temp.Count.ToString() + " items");
             return temp;
@@ -192,10 +215,10 @@ namespace Biller.Core.Database
                     doc = XElement.Parse(File.ReadAllText(DatabasePath + "Settings.xml", Encoding.UTF8));
                     doc.Element("CurrentCompany").Element(CurrentCompany.XElementName).ReplaceWith(target.GetXElement());
                 }
-                catch (Exception e) { logger.FatalException("Error while parsing or replacing the current company. Exiting the methode without changeing the company.", e); return false; }
+                catch (Exception e) { logger.Fatal("Error while parsing or replacing the current company. Exiting the methode without changeing the company.", e); return false; }
             }
             try { File.WriteAllText(DatabasePath + "Settings.xml", doc.ToString(), Encoding.UTF8); }
-            catch (Exception e) { logger.FatalException("Could not write the changes into the file", e); }
+            catch (Exception e) { logger.Fatal("Could not write the changes into the file", e); }
             logger.Info("Reconnecting database");
             return await Connect();
         }
@@ -204,14 +227,14 @@ namespace Biller.Core.Database
         {
             logger.Info("Adding new company " + source.CompanyName + "(" + source.CompanyID + ")");
             try { System.IO.Directory.CreateDirectory(DatabasePath + source.CompanyID); }
-            catch (Exception e) { logger.FatalException("Error creating directory", e); }
+            catch (Exception e) { logger.Fatal("Error creating directory", e); }
 
             try
             {
                 var temp = new XElement("Settings", source.GetXElement());
                 File.WriteAllText(DatabasePath + source.CompanyID + "\\Others.xml", temp.ToString(), Encoding.UTF8);
             }
-            catch (Exception e) { logger.FatalException("Error saving the initial settings document", e); }
+            catch (Exception e) { logger.Fatal("Error saving the initial settings document", e); }
         }
 
         
@@ -237,7 +260,7 @@ namespace Biller.Core.Database
                     tempitem.ParseFromXElement(item);
                     templist.Add(tempitem);
                 }
-                catch (Exception e) { logger.FatalException("Error parsing the element", e); }
+                catch (Exception e) { logger.Fatal("Error parsing the element", e); }
             }
             return templist;
         }
@@ -253,7 +276,7 @@ namespace Biller.Core.Database
                 SettingsDB.Element("PaymentMethodes").Add(source.GetXElement());
 
             try { File.WriteAllText(DatabasePath + CurrentCompany.CompanyID + "\\Others.xml", SettingsDB.ToString()); }
-            catch (Exception e) { logger.FatalException("Error saving the file " + DatabasePath + CurrentCompany.CompanyID + "\\Others.xml. PaymentMethodes was changed.", e); }
+            catch (Exception e) { logger.Fatal("Error saving the file " + DatabasePath + CurrentCompany.CompanyID + "\\Others.xml. PaymentMethodes was changed.", e); }
         }
 
         public async Task<IEnumerable<Utils.TaxClass>> TaxClasses()
@@ -276,7 +299,7 @@ namespace Biller.Core.Database
                     tempitem.ParseFromXElement(item);
                     templist.Add(tempitem);
                 }
-                catch (Exception e) { logger.FatalException("Error parsing the element", e); }
+                catch (Exception e) { logger.Fatal("Error parsing the element", e); }
             }
             return templist;
         }
@@ -293,7 +316,7 @@ namespace Biller.Core.Database
 
             
             try { File.WriteAllText(DatabasePath + CurrentCompany.CompanyID + "\\Others.xml", SettingsDB.ToString()); }
-            catch (Exception e) { logger.FatalException("Error saving changes to " + DatabasePath + CurrentCompany.CompanyID + "\\Others.xml" + "TaxClass was changed.", e); }
+            catch (Exception e) { logger.Fatal("Error saving changes to " + DatabasePath + CurrentCompany.CompanyID + "\\Others.xml" + "TaxClass was changed.", e); }
         }
 
         public async Task<IEnumerable<Utils.Unit>> ArticleUnits()
@@ -316,7 +339,7 @@ namespace Biller.Core.Database
                     tempitem.ParseFromXElement(item);
                     templist.Add(tempitem);
                 }
-                catch (Exception e) { logger.FatalException("Error parsing the element", e); }
+                catch (Exception e) { logger.Fatal("Error parsing the element", e); }
             }
             return templist;
         }
@@ -332,7 +355,7 @@ namespace Biller.Core.Database
                 SettingsDB.Element("Units").Add(source.GetXElement());
             
             try { File.WriteAllText(DatabasePath + CurrentCompany.CompanyID + "\\Others.xml", SettingsDB.ToString()); }
-            catch (Exception e) { logger.FatalException("Error writing article-unit to " + DatabasePath + CurrentCompany.CompanyID + "\\Others.xml", e); }
+            catch (Exception e) { logger.Fatal("Error writing article-unit to " + DatabasePath + CurrentCompany.CompanyID + "\\Others.xml", e); }
         }
 
         public void SaveOrUpdateSettings(Utils.KeyValueStore settings)
@@ -355,7 +378,8 @@ namespace Biller.Core.Database
             if (!SettingsDB.Elements("Settings").Any())
                 return new Utils.KeyValueStore();
             XElement item = SettingsDB.Element("Settings");
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<Utils.KeyValueStore>(item.Value);
+            dynamic response = Newtonsoft.Json.JsonConvert.DeserializeObject<Utils.KeyValueStore>(item.Value);
+            return response;
         }
 
         #region Articles
@@ -420,7 +444,7 @@ namespace Biller.Core.Database
                 ArticleDB.Add(source.GetXElement());
 
             try { File.WriteAllText(DatabasePath + CurrentCompany.CompanyID + "\\Articles.xml", ArticleDB.ToString()); }
-            catch (Exception e) { logger.FatalException("Error writing article to " + DatabasePath + CurrentCompany.CompanyID + "\\Articles.xml", e); return false; }
+            catch (Exception e) { logger.Fatal("Error writing article to " + DatabasePath + CurrentCompany.CompanyID + "\\Articles.xml", e); return false; }
             sw.Stop();
             logger.Info(sw.Result());
             return true;
@@ -442,7 +466,7 @@ namespace Biller.Core.Database
             }
             
             try { File.WriteAllText(DatabasePath + CurrentCompany.CompanyID + "\\Articles.xml", ArticleDB.ToString()); }
-            catch (Exception e) { logger.FatalException("Error writing article to " + DatabasePath + CurrentCompany.CompanyID + "\\Articles.xml", e); return false; }
+            catch (Exception e) { logger.Fatal("Error writing article to " + DatabasePath + CurrentCompany.CompanyID + "\\Articles.xml", e); return false; }
             sw.Stop();
             logger.Info(sw.Result(source.Count()));
             return true;
@@ -590,7 +614,7 @@ namespace Biller.Core.Database
                 CustomerDB.Add(source.GetXElement());
             
             try { File.WriteAllText(DatabasePath + CurrentCompany.CompanyID + "\\Customers.xml", CustomerDB.ToString()); }
-            catch (Exception e) { logger.FatalException("Error writing article to " + DatabasePath + CurrentCompany.CompanyID + "\\Customers.xml", e); return false; }
+            catch (Exception e) { logger.Fatal("Error writing article to " + DatabasePath + CurrentCompany.CompanyID + "\\Customers.xml", e); return false; }
             sw.Stop();
             logger.Info(sw.Result());
             return true;
@@ -612,7 +636,7 @@ namespace Biller.Core.Database
             }
             
             try { File.WriteAllText(DatabasePath + CurrentCompany.CompanyID + "\\Customers.xml", CustomerDB.ToString()); }
-            catch (Exception e) { logger.FatalException("Error writing article to " + DatabasePath + CurrentCompany.CompanyID + "\\Customers.xml", e); return false; }
+            catch (Exception e) { logger.Fatal("Error writing article to " + DatabasePath + CurrentCompany.CompanyID + "\\Customers.xml", e); return false; }
             sw.Stop();
             logger.Info(sw.Result(source.Count()));
             return true;
@@ -646,7 +670,7 @@ namespace Biller.Core.Database
                     tempitem.Address = address.OneLineString;
                     templist.Add(tempitem);
                 }
-                catch (Exception e) { logger.FatalException("Error parsing the in 'GetAllCustomers': " + item.ToString(), e); }
+                catch (Exception e) { logger.Fatal("Error parsing the in 'GetAllCustomers': " + item.ToString(), e); }
             }
             sw.Stop();
             logger.Info(sw.Result(templist.Count));
@@ -733,7 +757,7 @@ namespace Biller.Core.Database
             }
             catch (Exception e)
             {
-                logger.FatalException("Exception in 'private bool updateTemporaryUsedCustomerID'", e);
+                logger.Fatal("Exception in 'private bool updateTemporaryUsedCustomerID'", e);
                 return false;
             }
             
@@ -879,7 +903,7 @@ namespace Biller.Core.Database
                     }
                     catch (Exception e)
                     {
-                        logger.ErrorException("Error at ParseAdditionalData", e);
+                        logger.Error("Error at ParseAdditionalData", e);
                     }
                 }
             }
@@ -913,7 +937,7 @@ namespace Biller.Core.Database
                 DocumentDB.Add(source.GetXElement());
             }
             try { File.WriteAllText(DatabasePath + CurrentCompany.CompanyID + "\\Documents.xml", DocumentDB.ToString()); }
-            catch (Exception e) { logger.FatalException("Error writing Document to " + DatabasePath + CurrentCompany.CompanyID + "\\Documents.xml", e); return false; }
+            catch (Exception e) { logger.Fatal("Error writing Document to " + DatabasePath + CurrentCompany.CompanyID + "\\Documents.xml", e); return false; }
             sw.Stop();
             logger.Info(sw.Result());
 
@@ -936,7 +960,7 @@ namespace Biller.Core.Database
             }
             catch (Exception e)
             {
-                logger.FatalException("Exception in 'private bool updateTemporaryUsedDocumentID'", e);
+                logger.Fatal("Exception in 'private bool updateTemporaryUsedDocumentID'", e);
                 return false;
             }
         }
@@ -985,7 +1009,7 @@ namespace Biller.Core.Database
                     tempitem.ParseFromXElement(item);
                     list.Add(tempitem);
                 }
-                catch (Exception e) { logger.FatalException("Error parsing the element", e); }
+                catch (Exception e) { logger.Fatal("Error parsing the element", e); }
             }
             sw.Stop();
             logger.Info(sw.Result(list.Count()));
@@ -1053,11 +1077,11 @@ namespace Biller.Core.Database
             }
             catch (Exception e)
             {
-                logger.FatalException("Error saving " + StorageableItem.XElementName, e);
+                logger.Fatal("Error saving " + StorageableItem.XElementName, e);
             }
 
             try { File.WriteAllText(DatabasePath + CurrentCompany.CompanyID + "\\" + StorageableItem.XElementName + "s.xml", db.ToString()); }
-            catch (Exception e) { logger.FatalException("Error writing " + StorageableItem.XElementName + " to " + DatabasePath + CurrentCompany.CompanyID + "\\" + StorageableItem.XElementName + "s.xml", e); }
+            catch (Exception e) { logger.Fatal("Error writing " + StorageableItem.XElementName + " to " + DatabasePath + CurrentCompany.CompanyID + "\\" + StorageableItem.XElementName + "s.xml", e); }
 
             sw.Stop();
             logger.Info(sw.Result());
@@ -1069,12 +1093,12 @@ namespace Biller.Core.Database
             return await Task<bool>.Run(() => registerStorageableItem(StorageableItem));
         }
 
-        private bool registerStorageableItem(Interfaces.IXMLStorageable StorageableItem)
+        private bool registerStorageableItem(Interfaces.IXMLStorageable StorageableItem, bool insertInDatabase = true)
         {
             if (String.IsNullOrEmpty(StorageableItem.XElementName))
                 return false;
-
-            RegisteredAdditionalDBs.Add(StorageableItem);
+            if (insertInDatabase)
+                RegisteredAdditionalDBs.Add(StorageableItem);
             if (File.Exists(DatabasePath + CurrentCompany.CompanyID + "\\" + StorageableItem.XElementName + "s.xml"))
             {
                 using (StreamReader reader = File.OpenText(DatabasePath + CurrentCompany.CompanyID + "\\" + StorageableItem.XElementName + "s.xml"))
