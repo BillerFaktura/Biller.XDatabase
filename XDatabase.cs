@@ -787,6 +787,8 @@ namespace Biller.Core.Database
             if (!DocumentDB.AncestorsAndSelf("Documents").Any())
                 return output;
 
+            logger.Trace("Loading " + DocumentType);
+
             if (!String.IsNullOrEmpty(DocumentType))
             {
                 var list = from document in DocumentDB.Elements() where document.Name == DocumentType && IntervalStart <= DateTime.Parse(document.Element("Date").Value) && IntervalEnd >= DateTime.Parse(document.Element("Date").Value) select document;
@@ -796,9 +798,10 @@ namespace Biller.Core.Database
                     temp.DocumentID = item.Element("ID").Value;
                     temp.Customer = item.Element("CustomerPreview").Value;
                     temp.Date = DateTime.Parse(item.Element("Date").Value);
+                    temp.LocalizedDocumentType = DocumentType;
 
                     foreach (Interfaces.DocumentParser parser in AdditionalPreviewParsers.Where(x => x.DocumentType == item.Name.ToString()))
-                    { var result = parser.ParseAdditionalPreviewData(ref temp, item); }
+                        parser.ParseAdditionalPreviewData(ref temp, item);
 
                     output.Add(temp);
                 }
@@ -812,9 +815,10 @@ namespace Biller.Core.Database
                     temp.DocumentID = item.Element("ID").Value;
                     temp.Customer = item.Element("PreviewCustomer").Value;
                     temp.Date = DateTime.Parse(item.Element("Date").Value);
+                    temp.LocalizedDocumentType = item.Name.ToString();
 
                     foreach (Interfaces.DocumentParser parser in AdditionalPreviewParsers.Where(x => x.DocumentType == item.Name.ToString()))
-                    { var result = parser.ParseAdditionalPreviewData(ref temp, item); }
+                        parser.ParseAdditionalPreviewData(ref temp, item);
 
                     output.Add(temp);
                 }
