@@ -796,7 +796,7 @@ namespace Biller.Core.Database
                 {
                     dynamic temp = new Document.PreviewDocument(item.Name.ToString());
                     temp.DocumentID = item.Element("ID").Value;
-                    temp.Customer = item.Element("CustomerPreview").Value;
+                    temp.Customer = item.Element("PreviewCustomer").Value;
                     temp.Date = DateTime.Parse(item.Element("Date").Value);
                     temp.LocalizedDocumentType = DocumentType;
 
@@ -1150,7 +1150,6 @@ namespace Biller.Core.Database
         {
             get { return "538BAA9C-D630-486D-BD61-02706C09E2A9"; }
         }
-
 
         public string DatabaseTitle
         {
